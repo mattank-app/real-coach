@@ -8,6 +8,27 @@ from google.genai import types
 
 # 1. Page Config & Interface Setup
 st.set_page_config(page_title="Alpine Endurance Coach", page_icon="🏔️", layout="centered")
+
+# ==========================================
+# NEW: SECURITY LOCK SCREEN
+# ==========================================
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔒 Restricted Access")
+    st.markdown("This is a private athletic coaching environment.")
+    pwd_attempt = st.text_input("Enter Passcode", type="password")
+    
+    if st.button("Unlock"):
+        if pwd_attempt == st.secrets["Dunhilll79"]:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Access Denied.")
+            
+    st.stop() # This entirely stops the rest of the app from loading
+    # ==========================================
 st.title("🏔️ Elite Mountain Endurance Coach")
 st.subheader("Uphill Athlete Analytics Engine")
 
