@@ -21,7 +21,8 @@ if not st.session_state.authenticated:
     pwd_attempt = st.text_input("Enter Passcode", type="password")
     
     if st.button("Unlock"):
-        if pwd_attempt == st.secrets["Dunhilll79"]:
+        # The script looks for the label "APP_PASSWORD" in your cloud vault
+        if pwd_attempt == st.secrets["APP_PASSWORD"]:
             st.session_state.authenticated = True
             st.rerun()
         else:
