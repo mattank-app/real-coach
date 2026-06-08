@@ -111,6 +111,23 @@ def get_weekly_activities(days: int = 7) -> dict:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Initialize Client
+client = genai.Client()
+
+# --- NEW: File Upload & Caching Logic ---
+@st.cache_resource
+def load_knowledge_base():
+    """Uploads the document once per server lifecycle to save API limits."""
+    # Ensure the exact filename matches what you uploaded to GitHub
+    file_name = "training_manual.pdf" 
+    if os.path.exists(file_name):
+        # Uploads the file to Gemini's temporary server storage
+        return client.files.upload(file=file_name)
+    return None
+
+knowledge_document = load_knowledge_base()
+# ----------------------------------------
+
 if "chat_session" not in st.session_state:
     client = genai.Client()
     system_prompt = (
@@ -140,8 +157,28 @@ if "chat_session" not in st.session_state:
         "- DO NOT ask the athlete to 'make up' or double-down on lost workouts from a previous week. Move forward.\n"
         "- DO NOT instruct or encourage the athlete to push through acute physical injuries, deep joint pain, or illness."
     )
+# --- NEW: Injecting the Document into the AI's Memory ---
+    initial_history = []
+    
+    if knowledge_document:
+        # If the file exists, we build a silent "fake" history so the AI reads it immediately
+        initial_history.extend([
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_uri(file_uri=knowledge_document.uri, mime_type=knowledge_document.mime_type),
+                    types.Part.from_text("Coach, here is the core reference manual. Internalize these methodologies and apply them to all future data audits.")
+                ]
+            ),
+            types.Content(
+                role="model",
+                parts=[types.Part.from_text("Understood. I have internalized the manual. Provide your data when ready.")]
+            )
+        ])
+
     st.session_state.chat_session = client.chats.create(
         model="gemini-3.5-flash",
+        history=initial_history, # The AI now starts the conversation already knowing the PDF
         config=types.GenerateContentConfig(
             tools=[get_daily_wellness, get_weekly_activities],
             temperature=0.2,
@@ -161,7 +198,7 @@ if user_input := st.chat_input("Message your coach..."):
         st.markdown(user_input)
         
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing performance logs..."):
+        with st.spinner("Analyzing performance logs against the manual..."):
             response = st.session_state.chat_session.send_message(user_input)
             st.markdown(response.text)
     st.session_state.messages.append({"role": "assistant", "content": response.text})
