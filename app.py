@@ -25,11 +25,21 @@ except KeyError:
 # ==========================================
 def get_daily_wellness(days: int = 7) -> dict:
     """Fetches biological wellness markers (CTL, ATL, TSB, HRV) from Intervals.icu."""
-    url = f"https://intervals.icu/api/v1/athlete/{athlete_id}/wellness"
+    
+    # 1. Calculate exact date range to prevent downloading massive historical data
+    now = datetime.datetime.now()
+    oldest_date = (now - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
+    newest_date = now.strftime('%Y-%m-%d')
+    
+    # 2. Attach the date parameters to the URL
+    url = f"https://intervals.icu/api/v1/athlete/{athlete_id}/wellness?oldest={oldest_date}&newest={newest_date}"
+    
     try:
         response = requests.get(url, auth=HTTPBasicAuth('API_KEY', api_key))
         if response.status_code == 200:
-            recent_days = response.json()[-days:]
+            # The API now only returns the exact days we asked for
+            recent_days = response.json() 
+            
             wellness_log = []
             for d in recent_days:
                 ctl = d.get("ctl", 0) or 0
@@ -44,7 +54,9 @@ def get_daily_wellness(days: int = 7) -> dict:
                     "resting_hr": d.get("restingHr")
                 })
             return {"status": "success", "wellness_history": wellness_log}
-        return {"status": "error", "message": f"Wellness API failed: {response.status_code}"}
+        else:
+            print(f"CRITICAL API ERROR: {response.status_code} - {response.text}")
+            return {"status": "error", "message": f"Wellness API failed: {response.status_code}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -53,13 +65,19 @@ def get_daily_wellness(days: int = 7) -> dict:
 # ==========================================
 def get_weekly_activities(days: int = 7) -> dict:
     """Fetches raw activity logs and processes required pace, duration, VAM, and 80/20 intensity fields."""
-    url = f"https://intervals.icu/api/v1/athlete/{athlete_id}/activities"
+    
+    # 1. Calculate the date range FIRST
+    now = datetime.datetime.now()
+    cutoff_date = (now - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
+    newest_date = now.strftime('%Y-%m-%d')
+    
+    # 2. Attach the mandatory date parameters directly to the URL
+    url = f"https://intervals.icu/api/v1/athlete/{athlete_id}/activities?oldest={cutoff_date}&newest={newest_date}"
+    
     try:
         response = requests.get(url, auth=HTTPBasicAuth('API_KEY', api_key))
         if response.status_code == 200:
-            now = datetime.datetime.now()
-            cutoff_date = (now - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
-            raw_activities = [a for a in response.json() if a.get("start_date_local", "") >= cutoff_date]
+            raw_activities = response.json()
             
             processed_activities = []
             for act in raw_activities:
