@@ -116,15 +116,21 @@ def get_weekly_activities(days: int = 7) -> dict:
                     p_sec = int((pace_decimal - p_min) * 60)
                     pace_str = f"{p_min}:{p_sec:02d}"
                 
+                # FIX 1: Extract HR zones directly from the API's array list
+                hr_zones = act.get("icu_hr_zone_times", [])
+                z1 = hr_zones[0] if len(hr_zones) > 0 else 0
+                z2 = hr_zones[1] if len(hr_zones) > 1 else 0
+                
                 low_intensity_pct = 0.0
                 if moving_sec > 0:
-                    z1 = act.get("hr_z1_secs", 0) or 0
-                    z2 = act.get("hr_z2_secs", 0) or 0
                     low_intensity_pct = round(((z1 + z2) / moving_sec) * 100, 1)
                 
                 vam_m_per_hour = 0
                 if moving_sec > 0 and elev_gain > 0:
                     vam_m_per_hour = round((elev_gain / moving_sec) * 3600)
+
+                # FIX 2: Check for multiple types of decoupling (Power or Pace)
+                cardiac_drift = act.get("icu_pm_ftp_decoupling") or act.get("icu_hr_pw_decoupling") or act.get("decoupling") or 0
                 
                 processed_activities.append({
                     "date": act.get("start_date_local", "")[:10],
@@ -137,7 +143,7 @@ def get_weekly_activities(days: int = 7) -> dict:
                     "low_intensity_percentage": low_intensity_pct,
                     "climbing_vam_m_hr": vam_m_per_hour,
                     "efficiency_factor": act.get("icu_efficiency"),
-                    "cardiac_drift_decoupling_pct": act.get("icu_pm_ftp_decoupling")
+                    "cardiac_drift_decoupling_pct": cardiac_drift
                 })
             return {"status": "success", "processed_completed_workouts": processed_activities}
         return {"status": "error", "message": f"Activities API failed: {response.status_code}"}
