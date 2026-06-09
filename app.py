@@ -157,32 +157,28 @@ def get_weekly_activities(days: int = 7) -> dict:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Initialize Client
-client = genai.Client()
+# Cached function to initialize client
+@st.cache_resource
+def get_genai_client():
+    return genai.Client()
 
-# --- NEW: File Upload & Caching Logic ---
+client = get_genai_client()
+
+# Cached function to load the PDF (Only runs once!)
 @st.cache_resource
 def load_knowledge_base():
-    """Uploads the document once per server lifecycle to save API limits."""
-    
-    # 1. Get the exact folder where app.py is currently running
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # 2. Attach the PDF filename to that folder path
     file_path = os.path.join(current_dir, "Knowledge feed trail running.pdf")
     
-    # 3. Check if it exists and upload
     if os.path.exists(file_path):
         return client.files.upload(file=file_path)
-    else:
-        print(f"CRITICAL ERROR: Could not find the PDF at {file_path}")
-        return None
+    print(f"CRITICAL ERROR: Could not find PDF at {file_path}")
+    return None
 
-knowledge_document = load_knowledge_base()
-# ----------------------------------------
-
+# Initialize the session ONLY if it doesn't exist
 if "chat_session" not in st.session_state:
-    client = genai.Client()
+    knowledge_document = load_knowledge_base()
+    
     system_prompt = (
         "Purpose & Persona:\n"
         "You are an elite ultra-trail running and mountain endurance coach. Your role is to act as a sounding board, "
@@ -212,28 +208,20 @@ if "chat_session" not in st.session_state:
     )
 # --- NEW: Injecting the Document into the AI's Memory ---
     initial_history = []
-    
     if knowledge_document:
-        # If the file exists, we build a silent "fake" history so the AI reads it immediately
         initial_history.extend([
-            types.Content(
-                role="user",
-                parts=[
-                    types.Part.from_uri(file_uri=knowledge_document.uri, mime_type=knowledge_document.mime_type),
-                    # ADDED text= below
-                    types.Part.from_text(text="Coach, here is the core reference manual. Internalize these methodologies and apply them to all future data audits.") 
-                ]
-            ),
-            types.Content(
-                role="model",
-                # ADDED text= below
-                parts=[types.Part.from_text(text="Understood. I have internalized the manual. Provide your data when ready.")]
-            )
+            types.Content(role="user", parts=[
+                types.Part.from_uri(file_uri=knowledge_document.uri, mime_type=knowledge_document.mime_type),
+                types.Part.from_text(text="Coach, here is the core reference manual. Internalize these methodologies and apply them to all future data audits.")
+            ]),
+            types.Content(role="model", parts=[
+                types.Part.from_text(text="Understood. I have internalized the manual. Provide your data when ready.")
+            ])
         ])
 
     st.session_state.chat_session = client.chats.create(
-        model="gemini-2.0-flash",
-        history=initial_history, # The AI now starts the conversation already knowing the PDF
+        model="gemini-1.5-flash",
+        history=initial_history,
         config=types.GenerateContentConfig(
             tools=[get_daily_wellness, get_weekly_activities],
             temperature=0.2,
@@ -255,12 +243,8 @@ if user_input := st.chat_input("Message your coach..."):
     with st.chat_message("assistant"):
         with st.spinner("Analyzing performance logs against the manual..."):
             try:
-                # Attempt to send the message
                 response = st.session_state.chat_session.send_message(user_input)
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
-                
             except Exception as e:
-                # If the server is overloaded, fail gracefully instead of crashing
-                error_msg = "My communication link to the main server is currently congested. Wait a few seconds and try again."
-                st.error(f"{error_msg}\n\n*Technical Details: {str(e)}*")
+                st.error(f"Coaching link congested. Wait a moment and try again. Details: {str(e)}")
