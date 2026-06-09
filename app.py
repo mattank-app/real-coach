@@ -169,7 +169,7 @@ def load_knowledge_base():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
     # 2. Attach the PDF filename to that folder path
-    file_path = os.path.join(current_dir, "Knowledge_feed_trail_running.pdf")
+    file_path = os.path.join(current_dir, "Knowledge feed trail running.pdf")
     
     # 3. Check if it exists and upload
     if os.path.exists(file_path):
