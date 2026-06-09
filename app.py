@@ -209,6 +209,7 @@ if "chat_session" not in st.session_state:
 # --- NEW: Injecting the Document into the AI's Memory ---
     initial_history = []
     if knowledge_document:
+        print(f"DEBUG: Document uploaded with URI: {knowledge_document.uri}")
         initial_history.extend([
             types.Content(role="user", parts=[
                 types.Part.from_uri(file_uri=knowledge_document.uri, mime_type=knowledge_document.mime_type),
