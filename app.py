@@ -220,12 +220,14 @@ if "chat_session" not in st.session_state:
                 role="user",
                 parts=[
                     types.Part.from_uri(file_uri=knowledge_document.uri, mime_type=knowledge_document.mime_type),
-                    types.Part.from_text("Coach, here is the core reference manual. Internalize these methodologies and apply them to all future data audits.")
+                    # ADDED text= below
+                    types.Part.from_text(text="Coach, here is the core reference manual. Internalize these methodologies and apply them to all future data audits.") 
                 ]
             ),
             types.Content(
                 role="model",
-                parts=[types.Part.from_text("Understood. I have internalized the manual. Provide your data when ready.")]
+                # ADDED text= below
+                parts=[types.Part.from_text(text="Understood. I have internalized the manual. Provide your data when ready.")]
             )
         ])
 
