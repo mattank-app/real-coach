@@ -7,7 +7,7 @@ from google import genai
 from google.genai import types
 
 # 1. Page Config & Interface Setup
-st.set_page_config(page_title="Alpine Endurance Coach", page_icon="🏔️", layout="centered")
+st.set_page_config(page_title="Trail Endurance Coach", page_icon="🏔️", layout="centered")
 
 # ==========================================
 # NEW: SECURITY LOCK SCREEN
@@ -30,8 +30,8 @@ if not st.session_state.authenticated:
             
     st.stop() # This entirely stops the rest of the app from loading
     # ==========================================
-st.title("🏔️ Elite Mountain Endurance Coach")
-st.subheader("Uphill Athlete Analytics Engine")
+st.title("🏔️ Trail Endurance Coach")
+st.subheader("Your Training Analytics Engine")
 
 # 2. Secure Access to Environment Secrets
 try:
