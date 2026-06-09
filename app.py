@@ -230,7 +230,7 @@ if "chat_session" not in st.session_state:
         ])
 
     st.session_state.chat_session = client.chats.create(
-        model="gemini-3.5-flash",
+        model="gemini-1.5-flash",
         history=initial_history, # The AI now starts the conversation already knowing the PDF
         config=types.GenerateContentConfig(
             tools=[get_daily_wellness, get_weekly_activities],
