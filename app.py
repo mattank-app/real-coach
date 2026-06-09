@@ -252,6 +252,13 @@ if user_input := st.chat_input("Message your coach..."):
         
     with st.chat_message("assistant"):
         with st.spinner("Analyzing performance logs against the manual..."):
-            response = st.session_state.chat_session.send_message(user_input)
-            st.markdown(response.text)
-    st.session_state.messages.append({"role": "assistant", "content": response.text})
+            try:
+                # Attempt to send the message
+                response = st.session_state.chat_session.send_message(user_input)
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+                
+            except Exception as e:
+                # If the server is overloaded, fail gracefully instead of crashing
+                error_msg = "My communication link to the main server is currently congested. Wait a few seconds and try again."
+                st.error(f"{error_msg}\n\n*Technical Details: {str(e)}*")
