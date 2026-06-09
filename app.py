@@ -165,7 +165,7 @@ client = genai.Client()
 def load_knowledge_base():
     """Uploads the document once per server lifecycle to save API limits."""
     # Ensure the exact filename matches what you uploaded to GitHub
-    file_name = "training_manual.pdf" 
+    file_name = "Knowledge_feed_trail_running.pdf" 
     if os.path.exists(file_name):
         # Uploads the file to Gemini's temporary server storage
         return client.files.upload(file=file_name)
