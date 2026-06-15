@@ -226,8 +226,13 @@ if "chat_session" not in st.session_state:
             tools=[get_daily_wellness, get_weekly_activities],
             temperature=0.2,
             system_instruction=system_prompt
+            safety_settings=[
+                types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_ONLY_HIGH"),
+                types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_ONLY_HIGH")
+            ]
         )
     )
+
 
 # Render chat interface history
 for message in st.session_state.messages:
@@ -242,9 +247,15 @@ if user_input := st.chat_input("Message your coach..."):
         
     with st.chat_message("assistant"):
         with st.spinner("Analyzing performance logs against the manual..."):
-            try:
-                response = st.session_state.chat_session.send_message(user_input)
+            response = st.session_state.chat_session.send_message(user_input)
+            
+            # NEW: Check if the text actually exists
+            if response.text:
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
-            except Exception as e:
-                st.error(f"Coaching link congested. Wait a moment and try again. Details: {str(e)}")
+            else:
+                # If Google wiped the text, find out exactly why
+                finish_reason = response.candidates[0].finish_reason if response.candidates else "Unknown"
+                error_msg = f"⚠️ The AI generated a blank response. Google API Finish Reason: {finish_reason}"
+                st.error(error_msg)
+                st.session_state.messages.append({"role": "assistant", "content": error_msg})
