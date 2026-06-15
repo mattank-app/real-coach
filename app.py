@@ -225,7 +225,7 @@ if "chat_session" not in st.session_state:
         config=types.GenerateContentConfig(
             tools=[get_daily_wellness, get_weekly_activities],
             temperature=0.2,
-            system_instruction=system_prompt
+            system_instruction=system_prompt,
             safety_settings=[
                 types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_ONLY_HIGH"),
                 types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_ONLY_HIGH")
