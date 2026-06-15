@@ -169,7 +169,7 @@ client = get_genai_client()
 @st.cache_resource
 def load_knowledge_base():
     """Uploads the document and waits for Google to finish processing it."""
-    file_name = "training_manual.pdf" 
+    file_name = "Knowledge feed trail running.pdf" 
     if os.path.exists(file_name):
         uploaded_file = client.files.upload(file=file_name)
         
@@ -180,6 +180,9 @@ def load_knowledge_base():
             
         return uploaded_file
     return None
+
+# 👇 ADD THIS EXACT LINE HERE 👇
+knowledge_document = load_knowledge_base()
 
 # Initialize the session ONLY if it doesn't exist
 if "chat_session" not in st.session_state:
