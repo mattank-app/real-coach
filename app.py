@@ -48,8 +48,9 @@ except KeyError:
 # ==========================================
 def get_daily_wellness(days: int = 7) -> dict:
     """Fetches biological wellness markers (CTL, ATL, TSB, HRV) from Intervals.icu."""
+    st.toast(f"📡 Coach is pulling your wellness data for the last {days} days...", icon="❤️")
     
-    # 1. Calculate exact date range to prevent downloading massive historical data
+    # 1. Calculate exact date range...
     now = datetime.datetime.now()
     oldest_date = (now - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
     newest_date = now.strftime('%Y-%m-%d')
@@ -88,8 +89,9 @@ def get_daily_wellness(days: int = 7) -> dict:
 # ==========================================
 def get_weekly_activities(days: int = 7) -> dict:
     """Fetches raw activity logs and processes required pace, duration, VAM, and 80/20 intensity fields."""
+    st.toast(f"📡 Coach is pulling your activity logs for the last {days} days...", icon="🏃")
     
-    # 1. Calculate the date range FIRST
+    # 1. Calculate the date range FIRST...
     now = datetime.datetime.now()
     cutoff_date = (now - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
     newest_date = now.strftime('%Y-%m-%d')
@@ -186,7 +188,7 @@ knowledge_document = load_knowledge_base()
 
 # Initialize the session ONLY if it doesn't exist
 if "chat_session" not in st.session_state:
-    # 1. Define the core persona text
+   # 1. Define the core persona text
     system_text = (
         "Purpose & Persona:\n"
         "You are an elite ultra-trail running and mountain endurance coach. Your role is to act as a sounding board, "
@@ -198,11 +200,14 @@ if "chat_session" not in st.session_state:
         "3. Aerobic Decoupling: Analyze long weekend efforts to check for cardiac drift.\n"
         "4. Muscular Endurance (ME): Verify execution of sport-specific strength progressions.\n\n"
         "Weekly Feedback Structure:\n"
-        "You must strictly format your entire response using the following four headings:\n"
+        "If you successfully retrieved the athlete's data, you MUST strictly format your entire response using the following four headings:\n"
         "## ## The Numbers\n"
         "## ## The Bright Spots\n"
         "## ## The Brutal Truth\n"
-        "## ## The Next Move\n"
+        "## ## The Next Move\n\n"
+        "CRITICAL ESCAPE HATCH:\n"
+        "If you call your tools and they return an error, OR if no data is found, YOU MUST IGNORE the four headings above. "
+        "Instead, immediately output a plain text response telling the athlete exactly what the error message was or that their log is empty."
     )
 
     # 2. Pack the text AND the PDF together into the System Instructions
