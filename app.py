@@ -1,5 +1,6 @@
 import os
 import datetime
+import time
 import requests
 from requests.auth import HTTPBasicAuth
 import streamlit as st
@@ -167,12 +168,17 @@ client = get_genai_client()
 # Cached function to load the PDF (Only runs once!)
 @st.cache_resource
 def load_knowledge_base():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_dir, "Knowledge feed trail running.pdf")
-    
-    if os.path.exists(file_path):
-        return client.files.upload(file=file_path)
-    print(f"CRITICAL ERROR: Could not find PDF at {file_path}")
+    """Uploads the document and waits for Google to finish processing it."""
+    file_name = "training_manual.pdf" 
+    if os.path.exists(file_name):
+        uploaded_file = client.files.upload(file=file_name)
+        
+        # NEW: Force the app to wait until the AI has actually read the PDF
+        while uploaded_file.state == "PROCESSING":
+            time.sleep(2)
+            uploaded_file = client.files.get(name=uploaded_file.name)
+            
+        return uploaded_file
     return None
 
 # Initialize the session ONLY if it doesn't exist
@@ -249,13 +255,17 @@ if user_input := st.chat_input("Message your coach..."):
         with st.spinner("Analyzing performance logs against the manual..."):
             response = st.session_state.chat_session.send_message(user_input)
             
-            # NEW: Check if the text actually exists
             if response.text:
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             else:
-                # If Google wiped the text, find out exactly why
-                finish_reason = response.candidates[0].finish_reason if response.candidates else "Unknown"
-                error_msg = f"⚠️ The AI generated a blank response. Google API Finish Reason: {finish_reason}"
+                # NEW: Check if the AI generated a hidden tool command instead of text
+                if response.function_calls:
+                    tool_name = response.function_calls[0].name
+                    error_msg = f"⚠️ The AI tried to trigger Intervals.icu ({tool_name}), but the automatic loop stalled."
+                else:
+                    finish_reason = response.candidates[0].finish_reason if response.candidates else "Unknown"
+                    error_msg = f"⚠️ The AI generated a blank response. Finish Reason: {finish_reason}"
+                
                 st.error(error_msg)
                 st.session_state.messages.append({"role": "assistant", "content": error_msg})
